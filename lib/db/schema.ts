@@ -72,3 +72,63 @@ export interface MatchResult {
   source: string | null;
   similarity: number;
 }
+
+/**
+ * 대화/메시지 테이블 스키마
+ *
+ * Supabase SQL Editor에서 실행:
+ *
+ * -- 대화 테이블
+ * CREATE TABLE conversations (
+ *   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+ *   user_id uuid REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+ *   title text DEFAULT '새 대화',
+ *   created_at timestamptz DEFAULT now(),
+ *   updated_at timestamptz DEFAULT now()
+ * );
+ *
+ * -- 메시지 테이블
+ * CREATE TABLE messages (
+ *   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+ *   conversation_id uuid REFERENCES conversations(id) ON DELETE CASCADE NOT NULL,
+ *   role text NOT NULL CHECK (role IN ('user', 'assistant')),
+ *   content text NOT NULL,
+ *   created_at timestamptz DEFAULT now()
+ * );
+ *
+ * -- RLS 정책
+ * ALTER TABLE conversations ENABLE ROW LEVEL SECURITY;
+ * ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+ *
+ * CREATE POLICY "Users can CRUD own conversations"
+ *   ON conversations FOR ALL
+ *   USING (auth.uid() = user_id);
+ *
+ * CREATE POLICY "Users can CRUD own messages"
+ *   ON messages FOR ALL
+ *   USING (
+ *     conversation_id IN (
+ *       SELECT id FROM conversations WHERE user_id = auth.uid()
+ *     )
+ *   );
+ *
+ * -- 인덱스
+ * CREATE INDEX idx_conversations_user ON conversations(user_id, updated_at DESC);
+ * CREATE INDEX idx_messages_conversation ON messages(conversation_id, created_at);
+ */
+
+export interface Conversation {
+  id: string;
+  user_id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Message {
+  id: string;
+  conversation_id: string;
+  role: "user" | "assistant";
+  content: string;
+  created_at: string;
+}

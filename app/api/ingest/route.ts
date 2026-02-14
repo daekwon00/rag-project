@@ -2,9 +2,16 @@ import { NextResponse } from "next/server";
 import { chunkText } from "@/lib/chunker";
 import { generateEmbeddings } from "@/lib/ai/embedding";
 import { db } from "@/lib/db";
+import { createSupabaseServer } from "@/lib/supabase/server";
 
 export async function POST(req: Request) {
   try {
+    const supabase = await createSupabaseServer();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const text = formData.get("text") as string | null;

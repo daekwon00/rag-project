@@ -1,10 +1,17 @@
 import { openai } from "@ai-sdk/openai";
 import { streamText } from "ai";
 import { findRelevantContent } from "@/lib/ai/embedding";
+import { createSupabaseServer } from "@/lib/supabase/server";
 
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
+  const supabase = await createSupabaseServer();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
   const { messages } = await req.json();
 
   const lastMessage = messages[messages.length - 1];

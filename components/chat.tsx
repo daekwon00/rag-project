@@ -1,7 +1,7 @@
 "use client";
 
 import { useChat } from "ai/react";
-import { useRef, useState, useEffect, type FormEvent } from "react";
+import { useRef, useState, useEffect, useCallback, type FormEvent } from "react";
 
 type UploadStatus =
   | { type: "idle" }
@@ -9,21 +9,62 @@ type UploadStatus =
   | { type: "success"; fileName: string; chunks: number }
   | { type: "error"; message: string };
 
-export function Chat() {
+interface ChatProps {
+  conversationId: string | null;
+  initialMessages?: { id: string; role: "user" | "assistant"; content: string }[];
+  onConversationCreated?: (id: string) => void;
+}
+
+async function saveMessage(conversationId: string, role: string, content: string) {
+  await fetch(`/api/conversations/${conversationId}/messages`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ role, content }),
+  });
+}
+
+async function createConversation(title: string): Promise<string> {
+  const res = await fetch("/api/conversations", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title }),
+  });
+  const data = await res.json();
+  return data.id;
+}
+
+
+export function Chat({ conversationId, initialMessages = [], onConversationCreated }: ChatProps) {
+  const convIdRef = useRef(conversationId);
+  const isFirstMessage = useRef(!conversationId);
+
   const {
     messages,
     input,
     handleInputChange,
-    handleSubmit,
+    handleSubmit: originalHandleSubmit,
     isLoading,
     error,
     reload,
-  } = useChat();
+  } = useChat({
+    initialMessages,
+    onFinish: async (message) => {
+      // 어시스턴트 응답 완료 시 DB 저장
+      if (convIdRef.current) {
+        await saveMessage(convIdRef.current, "assistant", message.content);
+      }
+    },
+  });
+
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>({
     type: "idle",
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    convIdRef.current = conversationId;
+  }, [conversationId]);
 
   // 메시지 추가 시 자동 스크롤
   useEffect(() => {
@@ -40,6 +81,38 @@ export function Chat() {
       return () => clearTimeout(timer);
     }
   }, [uploadStatus]);
+
+  const handleSubmit = useCallback(
+    async (e: FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      const userMessage = input.trim();
+      if (!userMessage) return;
+
+      try {
+        // 첫 메시지: 대화 생성
+        if (isFirstMessage.current) {
+          isFirstMessage.current = false;
+          const title = userMessage.length > 30
+            ? userMessage.slice(0, 30) + "..."
+            : userMessage;
+          const newId = await createConversation(title);
+          convIdRef.current = newId;
+          onConversationCreated?.(newId);
+        }
+
+        // 사용자 메시지 DB 저장
+        if (convIdRef.current) {
+          await saveMessage(convIdRef.current, "user", userMessage);
+        }
+      } catch (err) {
+        console.error("대화 저장 오류:", err);
+      }
+
+      // useChat의 원래 submit 호출
+      originalHandleSubmit(e);
+    },
+    [input, originalHandleSubmit, onConversationCreated]
+  );
 
   async function handleFileUpload(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -80,7 +153,7 @@ export function Chat() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex h-full flex-col gap-4">
       {/* 문서 업로드 */}
       <form
         onSubmit={handleFileUpload}
@@ -130,8 +203,8 @@ export function Chat() {
 
       {/* 채팅 메시지 */}
       <div
-        className="custom-scrollbar flex flex-col gap-4 overflow-y-auto rounded-lg border bg-white p-4"
-        style={{ minHeight: "400px", maxHeight: "60vh" }}
+        className="custom-scrollbar flex flex-1 flex-col gap-4 overflow-y-auto rounded-lg border bg-white p-4"
+        style={{ minHeight: "300px" }}
       >
         {messages.length === 0 && (
           <p className="text-center text-sm text-gray-400 mt-8">
@@ -166,7 +239,6 @@ export function Chat() {
             </div>
           </div>
         )}
-        {/* 채팅 에러 표시 */}
         {error && (
           <div className="flex justify-start">
             <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-600">
