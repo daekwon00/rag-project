@@ -14,7 +14,7 @@ export async function POST(req: Request) {
 
     if (file) {
       // PDF 파일 처리
-      if (file.type === "application/pdf") {
+      if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
         const pdfParse = (await import("pdf-parse")).default;
         const buffer = Buffer.from(await file.arrayBuffer());
         const pdfData = await pdfParse(buffer);
@@ -50,9 +50,10 @@ export async function POST(req: Request) {
       embeddings: result.length,
     });
   } catch (error) {
-    console.error("Ingest error:", error);
+    const errMsg = error instanceof Error ? error.message : String(error);
+    console.error("Ingest error:", errMsg, error);
     return NextResponse.json(
-      { error: "문서 수집 중 오류가 발생했습니다." },
+      { error: `문서 수집 중 오류: ${errMsg}` },
       { status: 500 }
     );
   }

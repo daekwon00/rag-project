@@ -1,20 +1,52 @@
 "use client";
 
 import { useChat } from "ai/react";
-import { useRef, useState, type FormEvent } from "react";
+import { useRef, useState, useEffect, type FormEvent } from "react";
+
+type UploadStatus =
+  | { type: "idle" }
+  | { type: "uploading"; fileName: string }
+  | { type: "success"; fileName: string; chunks: number }
+  | { type: "error"; message: string };
 
 export function Chat() {
-  const { messages, input, handleInputChange, handleSubmit, isLoading } =
-    useChat();
-  const [uploading, setUploading] = useState(false);
+  const {
+    messages,
+    input,
+    handleInputChange,
+    handleSubmit,
+    isLoading,
+    error,
+    reload,
+  } = useChat();
+  const [uploadStatus, setUploadStatus] = useState<UploadStatus>({
+    type: "idle",
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // 메시지 추가 시 자동 스크롤
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isLoading]);
+
+  // 업로드 성공 메시지 3초 후 자동 숨김
+  useEffect(() => {
+    if (uploadStatus.type === "success") {
+      const timer = setTimeout(
+        () => setUploadStatus({ type: "idle" }),
+        3000
+      );
+      return () => clearTimeout(timer);
+    }
+  }, [uploadStatus]);
 
   async function handleFileUpload(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const file = fileInputRef.current?.files?.[0];
     if (!file) return;
 
-    setUploading(true);
+    setUploadStatus({ type: "uploading", fileName: file.name });
     try {
       const formData = new FormData();
       formData.append("file", file);
@@ -26,20 +58,29 @@ export function Chat() {
 
       const data = await res.json();
       if (res.ok) {
-        alert(`문서 수집 완료: ${data.chunks}개 청크, ${data.embeddings}개 임베딩`);
+        setUploadStatus({
+          type: "success",
+          fileName: file.name,
+          chunks: data.chunks,
+        });
       } else {
-        alert(`오류: ${data.error}`);
+        setUploadStatus({
+          type: "error",
+          message: data.error || "업로드 실패",
+        });
       }
     } catch {
-      alert("파일 업로드 중 오류가 발생했습니다.");
+      setUploadStatus({
+        type: "error",
+        message: "네트워크 오류가 발생했습니다.",
+      });
     } finally {
-      setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4">
       {/* 문서 업로드 */}
       <form
         onSubmit={handleFileUpload}
@@ -53,17 +94,47 @@ export function Chat() {
         />
         <button
           type="submit"
-          disabled={uploading}
+          disabled={uploadStatus.type === "uploading"}
           className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50"
         >
-          {uploading ? "업로드 중..." : "문서 업로드"}
+          {uploadStatus.type === "uploading" ? "업로드 중..." : "문서 업로드"}
         </button>
       </form>
 
+      {/* 업로드 상태 표시 */}
+      {uploadStatus.type === "uploading" && (
+        <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm text-blue-700">
+          <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          <span>{uploadStatus.fileName} 처리 중...</span>
+        </div>
+      )}
+      {uploadStatus.type === "success" && (
+        <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-sm text-green-700">
+          {uploadStatus.fileName} 업로드 완료 ({uploadStatus.chunks}개 청크)
+        </div>
+      )}
+      {uploadStatus.type === "error" && (
+        <div className="flex items-center justify-between rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+          <span>{uploadStatus.message}</span>
+          <button
+            onClick={() => setUploadStatus({ type: "idle" })}
+            className="ml-2 text-red-500 hover:text-red-700"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* 채팅 메시지 */}
-      <div className="flex flex-col gap-4 rounded-lg border bg-white p-4" style={{ minHeight: "400px" }}>
+      <div
+        className="custom-scrollbar flex flex-col gap-4 overflow-y-auto rounded-lg border bg-white p-4"
+        style={{ minHeight: "400px", maxHeight: "60vh" }}
+      >
         {messages.length === 0 && (
-          <p className="text-center text-sm text-gray-400">
+          <p className="text-center text-sm text-gray-400 mt-8">
             문서를 업로드한 후 질문을 입력하세요.
           </p>
         )}
@@ -85,11 +156,31 @@ export function Chat() {
         ))}
         {isLoading && (
           <div className="flex justify-start">
-            <div className="rounded-lg bg-gray-100 px-4 py-2 text-sm text-gray-400">
-              답변 생성 중...
+            <div className="flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-sm text-gray-400">
+              <span className="inline-flex gap-1 text-lg font-bold">
+                <span className="dot-1">.</span>
+                <span className="dot-2">.</span>
+                <span className="dot-3">.</span>
+              </span>
+              답변 생성 중
             </div>
           </div>
         )}
+        {/* 채팅 에러 표시 */}
+        {error && (
+          <div className="flex justify-start">
+            <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-600">
+              <span>오류가 발생했습니다. </span>
+              <button
+                onClick={() => reload()}
+                className="underline hover:text-red-800"
+              >
+                다시 시도
+              </button>
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
       </div>
 
       {/* 입력 */}

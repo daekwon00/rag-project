@@ -39,7 +39,7 @@ export const db = {
   ): Promise<MatchResult[]> {
     const { data, error } = await supabase.rpc("match_embeddings", {
       query_embedding: JSON.stringify(queryEmbedding),
-      match_threshold: 0.5,
+      match_threshold: 0.2,
       match_count: limit,
     });
     if (error) throw error;

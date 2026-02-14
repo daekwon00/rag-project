@@ -1,6 +1,15 @@
 # RAG Chat — 문서 기반 질의응답 시스템
 
-> 3일 집중 프로젝트: 문서를 업로드하고 RAG 기반으로 질문에 답변하는 채팅 시스템
+> 문서를 업로드하면 RAG(Retrieval-Augmented Generation) 기반으로 질문에 답변하는 채팅 시스템
+
+## 주요 기능
+
+- 문서 업로드: `.txt`, `.md`, `.pdf` 파일 지원
+- 자동 청킹: 문서를 적절한 크기로 분할 (500자 단위, 100자 오버랩)
+- 벡터 임베딩: OpenAI `text-embedding-3-small`로 벡터 변환 후 저장
+- 유사도 검색: pgvector 코사인 유사도로 관련 문서 조각 검색
+- 스트리밍 응답: GPT-4o가 검색된 문서 기반으로 실시간 답변 생성
+- 출처 표시: 답변에 참조한 문서 출처를 `[출처 N]` 형태로 표시
 
 ## 기술 스택
 
@@ -8,33 +17,11 @@
 |------|------|
 | Framework | Next.js 14 (App Router, TypeScript) |
 | AI SDK | Vercel AI SDK (`ai`, `@ai-sdk/openai`) |
-| Vector DB | Supabase (PostgreSQL + pgvector) — 무료 티어 |
+| Vector DB | Supabase (PostgreSQL + pgvector) |
 | 임베딩 | OpenAI `text-embedding-3-small` (1536 dim) |
 | LLM | GPT-4o |
 | UI | TailwindCSS |
-
-## 3일 개발 계획
-
-### Day 1: 기반 구축 + 문서 수집 파이프라인
-- [x] Next.js 프로젝트 초기화
-- [ ] Supabase 프로젝트 생성 + pgvector 활성화
-- [ ] DB 스키마 (resources, embeddings 테이블)
-- [ ] 문서 수집 API: 텍스트 → 청킹 → 임베딩 → 벡터 저장
-- [ ] 샘플 문서 수집 테스트
-
-### Day 2: RAG 쿼리 파이프라인 + 채팅 UI
-- [ ] 유사도 검색 함수 (cosine similarity with pgvector)
-- [ ] RAG 쿼리 API (질문 → 임베딩 → 검색 → LLM 응답)
-- [ ] Vercel AI SDK `streamText` + `useChat` 스트리밍 채팅 UI
-- [ ] 문서 업로드 UI
-- [ ] 출처 표시 기능
-
-### Day 3: 고도화 + 데모 준비
-- [ ] PDF 파일 업로드 (pdf-parse)
-- [ ] 에러 핸들링, 로딩 상태
-- [ ] 데모용 샘플 데이터 준비
-- [ ] Vercel 배포 또는 로컬 시연 준비
-- [ ] README 정리 (포트폴리오용)
+| PDF 파싱 | pdf-parse |
 
 ## 아키텍처
 
@@ -56,23 +43,80 @@
 
 ## 시작하기
 
-### 1. 환경 변수 설정
-```bash
-cp .env.local.example .env.local
-# .env.local 파일에 API 키 입력
-```
-
-### 2. 의존성 설치 + 실행
+### 1. 의존성 설치
 ```bash
 npm install
-npm run dev
+```
+
+### 2. 환경 변수 설정
+```bash
+cp .env.local.example .env.local
+```
+`.env.local` 파일에 실제 키를 입력합니다:
+```
+OPENAI_API_KEY=sk-your-openai-api-key
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 ```
 
 ### 3. Supabase 설정
-Supabase SQL Editor에서 `lib/db/schema.ts` 상단 주석의 SQL을 실행합니다.
+Supabase SQL Editor에서 아래 SQL을 실행합니다:
+```sql
+-- pgvector 확장 활성화
+create extension if not exists vector;
 
-### 4. 문서 업로드
-- 웹 UI에서 .txt, .pdf, .md 파일 업로드
+-- 리소스 테이블
+create table resources (
+  id bigserial primary key,
+  name text not null,
+  content text not null,
+  chunk_count integer not null default 0,
+  created_at timestamptz default now()
+);
+
+-- 임베딩 테이블
+create table embeddings (
+  id bigserial primary key,
+  content text not null,
+  source text,
+  embedding vector(1536),
+  created_at timestamptz default now()
+);
+
+-- 유사도 검색 함수
+create or replace function match_embeddings(
+  query_embedding vector(1536),
+  match_threshold float default 0.5,
+  match_count int default 5
+)
+returns table (
+  id bigint,
+  content text,
+  source text,
+  similarity float
+)
+language sql stable
+as $$
+  select
+    embeddings.id,
+    embeddings.content,
+    embeddings.source,
+    1 - (embeddings.embedding <=> query_embedding) as similarity
+  from embeddings
+  where 1 - (embeddings.embedding <=> query_embedding) > match_threshold
+  order by (embeddings.embedding <=> query_embedding) asc
+  limit match_count;
+$$;
+```
+
+### 4. 개발 서버 실행
+```bash
+npm run dev
+```
+`http://localhost:3000` 에서 확인합니다.
+
+### 5. 문서 업로드
+- 웹 UI에서 파일 선택 → 문서 업로드 버튼
 - 또는 API 직접 호출:
 ```bash
 curl -X POST http://localhost:3000/api/ingest \
@@ -85,7 +129,8 @@ curl -X POST http://localhost:3000/api/ingest \
 rag-project/
 ├── app/
 │   ├── layout.tsx              # 루트 레이아웃
-│   ├── page.tsx                # 메인 페이지 (채팅 UI)
+│   ├── page.tsx                # 메인 페이지
+│   ├── globals.css             # 글로벌 스타일
 │   └── api/
 │       ├── chat/route.ts       # RAG 쿼리 + 스트리밍 응답
 │       └── ingest/route.ts     # 문서 수집 (청킹 + 임베딩)
@@ -97,5 +142,19 @@ rag-project/
 │   └── chunker.ts              # 문서 청킹 유틸
 ├── components/
 │   └── chat.tsx                # 채팅 UI 컴포넌트
-└── data/sample-docs/           # 테스트용 샘플 문서
+└── data/sample-docs/           # 샘플 문서
 ```
+
+## 핵심 구현 포인트
+
+### 문서 청킹 전략
+- 500자 단위 분할, 100자 오버랩으로 문맥 유지
+- 문장 경계에서 분할하여 의미 단위 보존
+
+### 임베딩 + 출처 포함
+- 임베딩 생성 시 `[출처: 파일명]` 을 텍스트에 포함
+- 파일명 기반 질문에도 유사도 검색이 가능
+
+### 유사도 검색 최적화
+- 코사인 유사도 임계값 0.2로 설정 (낮은 임계값으로 넓은 검색)
+- 상위 5개 문서 조각을 컨텍스트로 활용

@@ -18,7 +18,7 @@ export async function generateEmbeddings(
 ): Promise<{ content: string; embedding: number[] }[]> {
   const { embeddings } = await embedMany({
     model: embeddingModel,
-    values: chunks,
+    values: chunks.map((chunk) => `[출처: ${source}]\n${chunk}`),
   });
 
   const results = embeddings.map((embedding, i) => ({
