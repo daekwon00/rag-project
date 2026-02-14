@@ -11,7 +11,7 @@ export default function Home() {
           <div>
             <h1 className="text-xl font-bold text-gray-900">RAG Chat</h1>
             <p className="text-xs text-gray-400">
-              문서 기반 질의응답 시스템
+              문서 기반 질의응답 시스템 by <span className="font-medium text-gray-500">UDKsoft</span>
             </p>
           </div>
           <div className="flex items-center gap-2 text-xs text-gray-400">
@@ -29,7 +29,7 @@ export default function Home() {
       {/* 푸터 */}
       <footer className="border-t bg-white px-4 py-3">
         <p className="text-center text-xs text-gray-400">
-          Next.js + Vercel AI SDK + Supabase pgvector
+          UDKsoft &middot; Next.js + Vercel AI SDK + Supabase pgvector
         </p>
       </footer>
     </main>
