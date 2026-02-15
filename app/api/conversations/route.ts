@@ -57,7 +57,12 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { id } = await req.json();
+  const body = await req.json().catch(() => ({}));
+  const { id } = body;
+
+  if (!id || typeof id !== "string") {
+    return NextResponse.json({ error: "유효한 대화 ID가 필요합니다." }, { status: 400 });
+  }
 
   const { error } = await supabase
     .from("conversations")

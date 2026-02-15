@@ -50,7 +50,28 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { role, content } = await req.json();
+  // 대화 소유권 확인
+  const { data: conversation } = await supabase
+    .from("conversations")
+    .select("id")
+    .eq("id", params.id)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!conversation) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const body = await req.json().catch(() => ({}));
+  const { role, content } = body;
+
+  // role/content 검증
+  if (!role || !["user", "assistant"].includes(role)) {
+    return NextResponse.json({ error: "role은 'user' 또는 'assistant'여야 합니다." }, { status: 400 });
+  }
+  if (!content || typeof content !== "string") {
+    return NextResponse.json({ error: "content는 비어있지 않은 문자열이어야 합니다." }, { status: 400 });
+  }
 
   const { data, error } = await supabase
     .from("messages")

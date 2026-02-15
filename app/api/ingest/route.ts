@@ -12,10 +12,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const text = formData.get("text") as string | null;
     const source = formData.get("source") as string | null;
+
+    if (file && file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: "파일 크기는 10MB 이하여야 합니다." },
+        { status: 400 }
+      );
+    }
 
     let content: string;
 

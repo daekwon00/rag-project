@@ -63,16 +63,16 @@ export function Sidebar({ currentId, onSelect, onNew, isOpen, onClose }: Sidebar
 
       {/* 사이드바 */}
       <aside
-        className={`fixed left-0 top-0 z-30 flex h-full w-64 flex-col border-r bg-white transition-transform lg:static lg:translate-x-0 ${
+        className={`fixed left-0 top-0 z-30 flex h-full w-64 flex-col border-r border-gray-200 bg-white transition-transform dark:border-gray-700 dark:bg-gray-800 lg:static lg:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* 헤더 */}
-        <div className="flex items-center justify-between border-b px-4 py-4">
-          <h2 className="text-sm font-semibold text-gray-700">대화 목록</h2>
+        <div className="flex items-center justify-between border-b border-gray-200 px-4 py-4 dark:border-gray-700">
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">대화 목록</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 lg:hidden"
+            className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 lg:hidden"
           >
             <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -87,7 +87,7 @@ export function Sidebar({ currentId, onSelect, onNew, isOpen, onClose }: Sidebar
               onNew();
               onClose();
             }}
-            className="flex w-full items-center gap-2 rounded-lg border border-dashed border-gray-300 px-3 py-2 text-sm text-gray-600 hover:border-gray-400 hover:text-gray-900"
+            className="flex w-full items-center gap-2 rounded-lg border border-dashed border-gray-300 px-3 py-2 text-sm text-gray-600 hover:border-gray-400 hover:text-gray-900 dark:border-gray-600 dark:text-gray-400 dark:hover:border-gray-500 dark:hover:text-gray-200"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -99,9 +99,9 @@ export function Sidebar({ currentId, onSelect, onNew, isOpen, onClose }: Sidebar
         {/* 대화 목록 */}
         <div className="custom-scrollbar flex-1 overflow-y-auto px-3">
           {loading ? (
-            <p className="py-4 text-center text-xs text-gray-400">로딩 중...</p>
+            <p className="py-4 text-center text-xs text-gray-400 dark:text-gray-500">로딩 중...</p>
           ) : conversations.length === 0 ? (
-            <p className="py-4 text-center text-xs text-gray-400">대화가 없습니다</p>
+            <p className="py-4 text-center text-xs text-gray-400 dark:text-gray-500">대화가 없습니다</p>
           ) : (
             <ul className="space-y-1">
               {conversations.map((conv) => (
@@ -113,14 +113,14 @@ export function Sidebar({ currentId, onSelect, onNew, isOpen, onClose }: Sidebar
                     }}
                     className={`group flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm ${
                       currentId === conv.id
-                        ? "bg-gray-100 text-gray-900"
-                        : "text-gray-600 hover:bg-gray-50"
+                        ? "bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-gray-100"
+                        : "text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700/50"
                     }`}
                   >
                     <span className="truncate">{conv.title}</span>
                     <button
                       onClick={(e) => handleDelete(e, conv.id)}
-                      className="ml-2 hidden shrink-0 text-gray-400 hover:text-red-500 group-hover:block"
+                      className="ml-2 hidden shrink-0 text-gray-400 hover:text-red-500 group-hover:block dark:text-gray-500 dark:hover:text-red-400"
                     >
                       <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

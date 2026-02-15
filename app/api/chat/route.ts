@@ -14,7 +14,15 @@ export async function POST(req: Request) {
 
   const { messages } = await req.json();
 
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return new Response("messages 배열이 필요합니다.", { status: 400 });
+  }
+
   const lastMessage = messages[messages.length - 1];
+  if (!lastMessage?.content || typeof lastMessage.content !== "string") {
+    return new Response("유효한 메시지 content가 필요합니다.", { status: 400 });
+  }
+
   const userQuery = lastMessage.content;
 
   // 벡터 검색으로 관련 문서 조각 찾기
