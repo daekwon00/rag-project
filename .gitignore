@@ -6,3 +6,6 @@ out/
 .vercel
 tsconfig.tsbuildinfo
 .claude/
+
+*storybook.log
+storybook-static

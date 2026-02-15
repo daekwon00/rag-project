@@ -1,0 +1,701 @@
+openapi: 3.0.3
+info:
+  title: RAG Chat API
+  description: |
+    문서 기반 질의응답(RAG) 시스템 API.
+    업로드된 문서를 벡터 임베딩으로 변환하고, 자연어 질의에 대해 관련 문서를 검색하여 GPT-4o 기반 스트리밍 응답을 제공합니다.
+  version: 1.0.0
+  contact:
+    name: UDKsoft
+
+servers:
+  - url: https://rag-project-navy.vercel.app
+    description: Production
+
+security:
+  - cookieAuth: []
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sb-dtbcgvuasxkovhzqtuhz-auth-token
+      description: |
+        Supabase Auth 세션 쿠키. 이메일/비밀번호 로그인 후 자동 설정됩니다.
+        모든 API 요청에 이 쿠키가 포함되어야 합니다.
+
+  schemas:
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: 에러 메시지
+
+    RateLimitError:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          example: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요."
+
+    ChatMessage:
+      type: object
+      required:
+        - role
+        - content
+      properties:
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+
+    ChatRequest:
+      type: object
+      required:
+        - messages
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChatMessage"
+          minItems: 1
+          description: 대화 메시지 배열. 마지막 메시지가 사용자 질문이어야 합니다.
+
+    Resource:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+          description: 문서 이름 (파일명 또는 직접 입력)
+        chunk_count:
+          type: integer
+          description: 청킹된 조각 수
+        created_at:
+          type: string
+          format: date-time
+
+    IngestResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "문서 수집 완료"
+        source:
+          type: string
+          example: "report.pdf"
+        chunks:
+          type: integer
+          description: 생성된 청크 수
+        embeddings:
+          type: integer
+          description: 생성된 임베딩 수
+
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    StatsResponse:
+      type: object
+      properties:
+        totalConversations:
+          type: integer
+        totalMessages:
+          type: integer
+        totalDocuments:
+          type: integer
+        totalChunks:
+          type: integer
+        recentActivity:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+                example: "2026-02-15"
+              count:
+                type: integer
+
+  responses:
+    Unauthorized:
+      description: 인증 실패 — 유효한 세션 쿠키가 필요합니다.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: "Unauthorized"
+
+    TooManyRequests:
+      description: Rate limit 초과
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: 재시도까지 남은 초
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/RateLimitError"
+
+    InternalError:
+      description: 서버 내부 오류
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+paths:
+  /api/chat:
+    post:
+      operationId: chat
+      summary: RAG 채팅
+      description: |
+        사용자 질문에 대해 업로드된 문서를 벡터 검색하고, 관련 문서를 기반으로 GPT-4o 스트리밍 응답을 생성합니다.
+        응답은 Vercel AI SDK Data Stream 프로토콜을 따릅니다.
+
+        **Rate Limit**: 20회/분 (sliding window)
+      tags:
+        - Chat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatRequest"
+            example:
+              messages:
+                - role: user
+                  content: "이 문서의 핵심 내용을 요약해 주세요."
+      responses:
+        "200":
+          description: 스트리밍 응답 (Vercel AI SDK Data Stream 형식)
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: |
+                  Vercel AI SDK Data Stream 프로토콜. 메시지 어노테이션으로 소스 문서 정보가 포함됩니다.
+        "400":
+          description: 잘못된 요청
+          content:
+            text/plain:
+              schema:
+                type: string
+              examples:
+                missingMessages:
+                  value: "messages 배열이 필요합니다."
+                invalidContent:
+                  value: "유효한 메시지 content가 필요합니다."
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+
+  /api/ingest:
+    post:
+      operationId: ingestDocument
+      summary: 문서 업로드
+      description: |
+        파일 또는 텍스트를 업로드하여 RAG 파이프라인에 수집합니다.
+        문서는 청킹 → 임베딩 → Supabase 저장 순서로 처리됩니다.
+
+        **지원 파일 형식**: PDF, DOCX, PPTX, TXT, MD
+        **파일 크기 제한**: 10MB
+        **Rate Limit**: 5회/분 (fixed window)
+      tags:
+        - Documents
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: "업로드할 파일 (PDF, DOCX, PPTX, TXT, MD)"
+                text:
+                  type: string
+                  description: "직접 입력할 텍스트 (file이 없을 때 사용)"
+                source:
+                  type: string
+                  description: "출처명 (생략 시 파일명 또는 '직접 입력' 사용)"
+            encoding:
+              file:
+                contentType: application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/vnd.openxmlformats-officedocument.presentationml.presentation, text/plain, text/markdown
+      responses:
+        "200":
+          description: 문서 수집 성공
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestResponse"
+              example:
+                message: "문서 수집 완료"
+                source: "report.pdf"
+                chunks: 12
+                embeddings: 12
+        "400":
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                fileTooLarge:
+                  value:
+                    error: "파일 크기는 10MB 이하여야 합니다."
+                unsupportedFormat:
+                  value:
+                    error: "지원하는 파일 형식: PDF, DOCX, PPTX, TXT, MD"
+                missingInput:
+                  value:
+                    error: "file 또는 text가 필요합니다."
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/documents:
+    get:
+      operationId: listDocuments
+      summary: 문서 목록 조회
+      description: 업로드된 문서 목록을 반환합니다 (최신순 정렬).
+      tags:
+        - Documents
+      responses:
+        "200":
+          description: 문서 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Resource"
+              example:
+                - id: 1
+                  name: "report.pdf"
+                  chunk_count: 12
+                  created_at: "2026-02-15T10:30:00Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      operationId: deleteDocument
+      summary: 문서 삭제
+      description: |
+        문서와 관련 임베딩을 삭제합니다.
+
+        **Rate Limit**: 10회/분 (sliding window)
+      tags:
+        - Documents
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: integer
+          description: 문서 ID
+        - name: source
+          in: query
+          required: true
+          schema:
+            type: string
+          description: 문서 출처명 (임베딩 삭제에 사용)
+      responses:
+        "200":
+          description: 삭제 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+              example:
+                message: "문서가 삭제되었습니다."
+        "400":
+          description: 필수 파라미터 누락
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "id와 source 파라미터가 필요합니다."
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/TooManyRequests"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/conversations:
+    get:
+      operationId: listConversations
+      summary: 대화 목록 조회
+      description: 현재 사용자의 대화 목록을 반환합니다 (최근 업데이트순 정렬).
+      tags:
+        - Conversations
+      responses:
+        "200":
+          description: 대화 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Conversation"
+              example:
+                - id: "550e8400-e29b-41d4-a716-446655440000"
+                  title: "문서 분석 요청"
+                  created_at: "2026-02-15T10:00:00Z"
+                  updated_at: "2026-02-15T10:30:00Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    post:
+      operationId: createConversation
+      summary: 새 대화 생성
+      description: 새 대화 세션을 생성합니다.
+      tags:
+        - Conversations
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  default: "새 대화"
+                  description: 대화 제목
+            example:
+              title: "문서 분석 요청"
+      responses:
+        "200":
+          description: 생성된 대화
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440000"
+                title: "문서 분석 요청"
+                created_at: "2026-02-15T10:00:00Z"
+                updated_at: "2026-02-15T10:00:00Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    delete:
+      operationId: deleteConversation
+      summary: 대화 삭제
+      description: 대화와 관련 메시지를 삭제합니다 (CASCADE).
+      tags:
+        - Conversations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                  description: 삭제할 대화 ID
+            example:
+              id: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        "200":
+          description: 삭제 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+              example:
+                success: true
+        "400":
+          description: 유효하지 않은 ID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "유효한 대화 ID가 필요합니다."
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/conversations/{id}/messages:
+    get:
+      operationId: getMessages
+      summary: 메시지 조회
+      description: 특정 대화의 메시지 목록을 시간순으로 반환합니다.
+      tags:
+        - Messages
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 대화 ID
+      responses:
+        "200":
+          description: 메시지 목록
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+              example:
+                - id: "660e8400-e29b-41d4-a716-446655440001"
+                  role: "user"
+                  content: "이 문서의 핵심 내용을 요약해 주세요."
+                  created_at: "2026-02-15T10:00:00Z"
+                - id: "660e8400-e29b-41d4-a716-446655440002"
+                  role: "assistant"
+                  content: "문서의 핵심 내용은 다음과 같습니다..."
+                  created_at: "2026-02-15T10:00:05Z"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: 대화를 찾을 수 없음
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "Not found"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+    post:
+      operationId: saveMessage
+      summary: 메시지 저장
+      description: 특정 대화에 메시지를 추가합니다. 대화의 updated_at이 자동 갱신됩니다.
+      tags:
+        - Messages
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 대화 ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - role
+                - content
+              properties:
+                role:
+                  type: string
+                  enum: [user, assistant]
+                content:
+                  type: string
+                  minLength: 1
+            example:
+              role: "user"
+              content: "이 문서의 핵심 내용을 요약해 주세요."
+      responses:
+        "200":
+          description: 저장된 메시지
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+              example:
+                id: "660e8400-e29b-41d4-a716-446655440001"
+                role: "user"
+                content: "이 문서의 핵심 내용을 요약해 주세요."
+                created_at: "2026-02-15T10:00:00Z"
+        "400":
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                invalidRole:
+                  value:
+                    error: "role은 'user' 또는 'assistant'여야 합니다."
+                invalidContent:
+                  value:
+                    error: "content는 비어있지 않은 문자열이어야 합니다."
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: 대화를 찾을 수 없음
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: "Not found"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/stats:
+    get:
+      operationId: getStats
+      summary: 사용 통계 조회
+      description: |
+        사용자의 대화, 메시지, 문서, 청크 수와 최근 7일간 일별 메시지 활동량을 반환합니다.
+      tags:
+        - Stats
+      responses:
+        "200":
+          description: 사용 통계
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatsResponse"
+              example:
+                totalConversations: 5
+                totalMessages: 42
+                totalDocuments: 3
+                totalChunks: 36
+                recentActivity:
+                  - date: "2026-02-09"
+                    count: 0
+                  - date: "2026-02-10"
+                    count: 5
+                  - date: "2026-02-11"
+                    count: 3
+                  - date: "2026-02-12"
+                    count: 8
+                  - date: "2026-02-13"
+                    count: 2
+                  - date: "2026-02-14"
+                    count: 10
+                  - date: "2026-02-15"
+                    count: 4
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/export/{id}:
+    get:
+      operationId: exportConversation
+      summary: 대화 마크다운 내보내기
+      description: |
+        특정 대화를 마크다운 파일로 다운로드합니다.
+        응답은 `Content-Disposition: attachment` 헤더와 함께 마크다운 텍스트로 반환됩니다.
+      tags:
+        - Export
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 대화 ID
+      responses:
+        "200":
+          description: 마크다운 파일
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+              description: "attachment; filename*=UTF-8''<제목>.md"
+          content:
+            text/markdown:
+              schema:
+                type: string
+              example: |
+                # 문서 분석 요청
+
+                > 내보내기: 2026. 02. 15. 10:30 KST
+
+                ---
+
+                **사용자**: 이 문서의 핵심 내용을 요약해 주세요.
+
+                ---
+
+                **어시스턴트**: 문서의 핵심 내용은 다음과 같습니다...
+        "401":
+          description: 인증 실패
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "Unauthorized"
+        "404":
+          description: 대화를 찾을 수 없음
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "Not found"
+        "500":
+          description: 서버 오류
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "Internal server error"
