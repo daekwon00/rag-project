@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.1.0",
+    "@sentry/nextjs": "^10.38.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.47.0",
     "@upstash/ratelimit": "^2.0.8",

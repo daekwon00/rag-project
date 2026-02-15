@@ -98,6 +98,7 @@ export function Chat({ conversationId, initialMessages = [], onConversationCreat
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>({
     type: "idle",
   });
+  const [exporting, setExporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -191,6 +192,33 @@ export function Chat({ conversationId, initialMessages = [], onConversationCreat
     }
   }
 
+  async function handleExport() {
+    if (!convIdRef.current || exporting) return;
+    setExporting(true);
+    try {
+      const res = await fetch(`/api/export/${convIdRef.current}`);
+      if (!res.ok) throw new Error("내보내기 실패");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download =
+        res.headers.get("Content-Disposition")?.match(/filename\*=UTF-8''(.+)/)?.[1]
+          ? decodeURIComponent(
+              res.headers.get("Content-Disposition")!.match(/filename\*=UTF-8''(.+)/)![1]
+            )
+          : "대화.md";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("내보내기 오류:", err);
+    } finally {
+      setExporting(false);
+    }
+  }
+
   // 스트리밍 상태 감지
   const lastMessage = messages[messages.length - 1];
   const isWaitingForResponse = isLoading && (!lastMessage || lastMessage.role === "user" || (lastMessage.role === "assistant" && !lastMessage.content));
@@ -250,6 +278,17 @@ export function Chat({ conversationId, initialMessages = [], onConversationCreat
         className="custom-scrollbar flex flex-1 flex-col gap-4 overflow-y-auto rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800"
         style={{ minHeight: "300px" }}
       >
+        {convIdRef.current && messages.length > 0 && (
+          <div className="flex justify-start">
+            <button
+              onClick={handleExport}
+              disabled={exporting}
+              className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 disabled:opacity-50"
+            >
+              {exporting ? "내보내기 중..." : "마크다운으로 내보내기"}
+            </button>
+          </div>
+        )}
         {messages.length === 0 && (
           <p className="text-center text-sm text-gray-400 mt-8 dark:text-gray-500">
             문서를 업로드한 후 질문을 입력하세요.

@@ -1,6 +1,7 @@
 "use client";
 
 import { createSupabaseBrowser } from "@/lib/supabase/client";
+import { useTranslation } from "@/lib/i18n/useTranslation";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -10,6 +11,7 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const { t } = useTranslation();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -36,16 +38,16 @@ export default function SignupPage() {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-900">
         <div className="w-full max-w-sm text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">이메일을 확인하세요</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t("auth", "checkEmail")}</h1>
           <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
-            <span className="font-medium text-gray-900 dark:text-gray-100">{email}</span>로 확인 링크를 보냈습니다.
-            이메일의 링크를 클릭하여 회원가입을 완료하세요.
+            <span className="font-medium text-gray-900 dark:text-gray-100">{email}</span>{t("auth", "confirmSent")}
+            {" "}{t("auth", "confirmInstruction")}
           </p>
           <Link
             href="/login"
             className="mt-6 inline-block text-sm font-medium text-gray-900 hover:underline dark:text-gray-100"
           >
-            로그인 페이지로 돌아가기
+            {t("auth", "backToLogin")}
           </Link>
         </div>
       </main>
@@ -56,14 +58,14 @@ export default function SignupPage() {
     <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-900">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">RAG Chat</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">새 계정을 만드세요</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t("auth", "loginTitle")}</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("auth", "signupSubtitle")}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              이메일
+              {t("auth", "email")}
             </label>
             <input
               id="email"
@@ -78,7 +80,7 @@ export default function SignupPage() {
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              비밀번호
+              {t("auth", "password")}
             </label>
             <input
               id="password"
@@ -88,7 +90,7 @@ export default function SignupPage() {
               required
               minLength={6}
               className="mt-1 block w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:ring-gray-500"
-              placeholder="6자 이상"
+              placeholder={t("auth", "passwordMinLength")}
             />
           </div>
 
@@ -101,14 +103,14 @@ export default function SignupPage() {
             disabled={loading}
             className="w-full rounded-lg bg-gray-900 py-3 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300 dark:focus:ring-gray-500"
           >
-            {loading ? "가입 중..." : "회원가입"}
+            {loading ? t("auth", "signingUp") : t("common", "signup")}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
-          이미 계정이 있으신가요?{" "}
+          {t("auth", "hasAccount")}{" "}
           <Link href="/login" className="font-medium text-gray-900 hover:underline dark:text-gray-100">
-            로그인
+            {t("common", "login")}
           </Link>
         </p>
       </div>

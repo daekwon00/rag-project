@@ -3,6 +3,7 @@
 import { Chat } from "@/components/chat";
 import { Sidebar } from "@/components/sidebar";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
+import { useTranslation } from "@/lib/i18n/useTranslation";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -26,7 +27,7 @@ function ThemeToggle() {
     <button
       onClick={toggle}
       className="rounded-md p-1.5 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
-      aria-label="다크 모드 전환"
+      aria-label="Toggle dark mode"
     >
       {dark ? (
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -49,6 +50,7 @@ export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const router = useRouter();
+  const { t, lang, setLang } = useTranslation();
 
   useEffect(() => {
     const supabase = createSupabaseBrowser();
@@ -110,9 +112,9 @@ export default function Home() {
               </svg>
             </button>
             <div>
-              <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">RAG Chat</h1>
+              <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">{t("header", "ragChat")}</h1>
               <p className="text-xs text-gray-400 dark:text-gray-500">
-                by <span className="font-medium text-gray-500 dark:text-gray-400">UDKsoft</span>
+                by <span className="font-medium text-gray-500 dark:text-gray-400">{t("header", "byUDKsoft")}</span>
               </p>
             </div>
           </div>
@@ -125,17 +127,23 @@ export default function Home() {
               href="/documents"
               className="rounded-md px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
             >
-              문서 관리
+              {t("header", "documents")}
             </Link>
             {userEmail && (
               <span className="hidden text-xs text-gray-400 dark:text-gray-500 sm:block">{userEmail}</span>
             )}
             <ThemeToggle />
             <button
+              onClick={() => setLang(lang === "ko" ? "en" : "ko")}
+              className="rounded-md px-2 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+            >
+              {lang === "ko" ? "EN" : "KO"}
+            </button>
+            <button
               onClick={handleLogout}
               className="rounded-md px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
             >
-              로그아웃
+              {t("common", "logout")}
             </button>
           </div>
         </header>
@@ -155,7 +163,7 @@ export default function Home() {
         {/* 푸터 */}
         <footer className="border-t border-gray-200 bg-white px-4 py-2 dark:border-gray-700 dark:bg-gray-800">
           <p className="text-center text-xs text-gray-400 dark:text-gray-500">
-            UDKsoft &middot; Next.js + Vercel AI SDK + Supabase pgvector
+            {t("header", "byUDKsoft")} &middot; {t("footer", "tech")}
           </p>
         </footer>
       </main>

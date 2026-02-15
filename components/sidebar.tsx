@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import type { Conversation } from "@/lib/db/schema";
+import { useTranslation } from "@/lib/i18n/useTranslation";
 
 interface SidebarProps {
   currentId: string | null;
@@ -15,6 +16,7 @@ interface SidebarProps {
 export function Sidebar({ currentId, onSelect, onNew, isOpen, onClose }: SidebarProps) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
 
   async function fetchConversations() {
     try {
@@ -36,7 +38,7 @@ export function Sidebar({ currentId, onSelect, onNew, isOpen, onClose }: Sidebar
 
   async function handleDelete(e: React.MouseEvent, id: string) {
     e.stopPropagation();
-    if (!confirm("이 대화를 삭제하시겠습니까?")) return;
+    if (!confirm(t("sidebar", "deleteConfirm"))) return;
 
     const res = await fetch("/api/conversations", {
       method: "DELETE",
@@ -70,7 +72,7 @@ export function Sidebar({ currentId, onSelect, onNew, isOpen, onClose }: Sidebar
       >
         {/* 헤더 */}
         <div className="flex items-center justify-between border-b border-gray-200 px-4 py-4 dark:border-gray-700">
-          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">대화 목록</h2>
+          <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">{t("sidebar", "conversations")}</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 lg:hidden"
@@ -93,16 +95,16 @@ export function Sidebar({ currentId, onSelect, onNew, isOpen, onClose }: Sidebar
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            새 대화
+            {t("sidebar", "newChat")}
           </button>
         </div>
 
         {/* 대화 목록 */}
         <div className="custom-scrollbar flex-1 overflow-y-auto px-3">
           {loading ? (
-            <p className="py-4 text-center text-xs text-gray-400 dark:text-gray-500">로딩 중...</p>
+            <p className="py-4 text-center text-xs text-gray-400 dark:text-gray-500">{t("common", "loading")}</p>
           ) : conversations.length === 0 ? (
-            <p className="py-4 text-center text-xs text-gray-400 dark:text-gray-500">대화가 없습니다</p>
+            <p className="py-4 text-center text-xs text-gray-400 dark:text-gray-500">{t("sidebar", "noConversations")}</p>
           ) : (
             <ul className="space-y-1">
               {conversations.map((conv) => (
@@ -143,7 +145,7 @@ export function Sidebar({ currentId, onSelect, onNew, isOpen, onClose }: Sidebar
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
-            문서 관리
+            {t("sidebar", "documents")}
           </Link>
           <Link
             href="/dashboard"
@@ -152,7 +154,7 @@ export function Sidebar({ currentId, onSelect, onNew, isOpen, onClose }: Sidebar
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
-            대시보드
+            {t("sidebar", "dashboard")}
           </Link>
         </div>
       </aside>

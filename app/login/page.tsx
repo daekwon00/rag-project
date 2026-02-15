@@ -1,6 +1,7 @@
 "use client";
 
 import { createSupabaseBrowser } from "@/lib/supabase/client";
+import { useTranslation } from "@/lib/i18n/useTranslation";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -11,6 +12,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { t } = useTranslation();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -37,14 +39,14 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-900">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">RAG Chat</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">로그인하여 시작하세요</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t("auth", "loginTitle")}</h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("auth", "loginSubtitle")}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              이메일
+              {t("auth", "email")}
             </label>
             <input
               id="email"
@@ -59,7 +61,7 @@ export default function LoginPage() {
 
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              비밀번호
+              {t("auth", "password")}
             </label>
             <input
               id="password"
@@ -68,7 +70,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               className="mt-1 block w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:ring-gray-500"
-              placeholder="비밀번호"
+              placeholder={t("auth", "passwordPlaceholder")}
             />
           </div>
 
@@ -81,14 +83,14 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full rounded-lg bg-gray-900 py-3 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300 dark:focus:ring-gray-500"
           >
-            {loading ? "로그인 중..." : "로그인"}
+            {loading ? t("auth", "loggingIn") : t("common", "login")}
           </button>
         </form>
 
         <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
-          계정이 없으신가요?{" "}
+          {t("auth", "noAccount")}{" "}
           <Link href="/signup" className="font-medium text-gray-900 hover:underline dark:text-gray-100">
-            회원가입
+            {t("common", "signup")}
           </Link>
         </p>
       </div>
