@@ -1,6 +1,6 @@
 # RAG Chat — Status
 
-> 마지막 업데이트: 2026-02-15 21:15 KST
+> 마지막 업데이트: 2026-02-15 21:30 KST
 
 ---
 
@@ -10,7 +10,7 @@
 
 - [x] Supabase SQL 실행 — 테이블 4개 + RLS + 인덱스 완료
 - [x] Upstash Redis 생성 + 환경변수 설정 (Vercel + `.env.local`) ✅
-- [x] Vercel 프로덕션 배포 확인 (`823831a`) ✅
+- [x] Vercel 프로덕션 배포 확인 (`154e05b`) ✅
 
 ### 기능 검증 완료 (2026-02-15 21:10 KST)
 
@@ -66,17 +66,21 @@
   - 신규: `vitest.config.ts`, `__tests__/lib/chunker.test.ts`, `__tests__/lib/ai/embedding.test.ts`, `__tests__/api/chat.test.ts`
   - 수정: `package.json`
 
+### Phase 2-4, 2-5, 3-4 (2026-02-15, 병렬 팀 작업 3차)
+
+- [x] **2-4. 청킹 전략 개선** — 헤딩 기반 분할 + 코드 블록 보존, 문장 경계 폴백
+  - 수정: `lib/chunker.ts`, `__tests__/lib/chunker.test.ts` (23개 테스트)
+- [x] **2-5. Hybrid Search** — BM25 텍스트 검색 + 벡터 검색 결합 (RRF 알고리즘)
+  - 신규: `lib/search/bm25.ts`, `__tests__/lib/search/bm25.test.ts` (17개 테스트)
+  - 수정: `lib/ai/embedding.ts`, `lib/db/index.ts`, `__tests__/lib/ai/embedding.test.ts`
+- [x] **3-4. CI/CD 파이프라인** — GitHub Actions (push/PR to main → tsc + vitest)
+  - 신규: `.github/workflows/ci.yml`
+- [x] tsconfig.json `target: es2017` 설정 (유니코드 정규식, Set 이터레이션 지원)
+- **테스트: 54개 전체 통과** (chunker 23 + BM25 17 + embedding 8 + chat 6)
+
 ---
 
 ## 다음 작업
-
-### 우선순위 높음
-
-- [ ] **2-4. 청킹 전략 개선** — 헤딩 기반, 코드 블록 보존
-- [ ] **2-5. Hybrid Search** — 벡터 + BM25 결합
-- [ ] **3-4. CI/CD 파이프라인** — GitHub Actions (3-3 완료로 가능)
-
-### 그 다음
 
 - [ ] **2-6. Re-ranking** — Cross-encoder 재정렬
 - [ ] **2-7. 멀티모달 문서** — DOCX, PPTX, OCR
