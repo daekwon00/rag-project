@@ -67,4 +67,28 @@ export const db = {
       .eq("source", source);
     if (error) throw error;
   },
+
+  async searchByText(
+    query: string,
+    limit: number = 20
+  ): Promise<{ id: number; content: string; source: string | null }[]> {
+    const keywords = query
+      .replace(/[^\p{L}\p{N}\s]/gu, " ")
+      .split(/\s+/)
+      .filter((k) => k.length > 0);
+
+    if (keywords.length === 0) return [];
+
+    // Build OR filter: content ILIKE '%keyword1%' OR content ILIKE '%keyword2%' ...
+    const orFilter = keywords.map((k) => `content.ilike.%${k}%`).join(",");
+
+    const { data, error } = await supabase
+      .from("embeddings")
+      .select("id, content, source")
+      .or(orFilter)
+      .limit(limit);
+
+    if (error) throw error;
+    return data ?? [];
+  },
 };

@@ -15,6 +15,7 @@ vi.mock("@ai-sdk/openai", () => ({
 vi.mock("@/lib/db", () => ({
   db: {
     searchEmbeddings: vi.fn(),
+    searchByText: vi.fn(),
     insertEmbeddings: vi.fn(),
   },
 }));
@@ -28,9 +29,12 @@ import {
 
 const mockEmbed = vi.mocked(embed);
 const mockSearchEmbeddings = vi.mocked(db.searchEmbeddings);
+const mockSearchByText = vi.mocked(db.searchByText);
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Default: searchByText returns empty (falls back to vector-only)
+  mockSearchByText.mockResolvedValue([]);
 });
 
 describe("generateEmbedding", () => {
@@ -69,17 +73,18 @@ describe("findRelevantContent", () => {
 
   it("두 번째 인자가 number일 때 limit으로 사용한다", async () => {
     await findRelevantContent("검색어", 3);
-    expect(mockSearchEmbeddings).toHaveBeenCalledWith(fakeEmbedding, 3);
+    // Hybrid search fetches limit*2 from vector search
+    expect(mockSearchEmbeddings).toHaveBeenCalledWith(fakeEmbedding, 6);
   });
 
   it("두 번째 인자가 object일 때 limit을 추출한다", async () => {
     await findRelevantContent("검색어", { limit: 10 });
-    expect(mockSearchEmbeddings).toHaveBeenCalledWith(fakeEmbedding, 10);
+    expect(mockSearchEmbeddings).toHaveBeenCalledWith(fakeEmbedding, 20);
   });
 
   it("limit이 없으면 기본값 5를 사용한다", async () => {
     await findRelevantContent("검색어");
-    expect(mockSearchEmbeddings).toHaveBeenCalledWith(fakeEmbedding, 5);
+    expect(mockSearchEmbeddings).toHaveBeenCalledWith(fakeEmbedding, 10);
   });
 
   it("context 없으면 원본 query로 임베딩한다", async () => {
