@@ -1,7 +1,8 @@
 import { openai } from "@ai-sdk/openai";
-import { streamText } from "ai";
+import { createDataStreamResponse, streamText } from "ai";
 import { findRelevantContent } from "@/lib/ai/embedding";
 import { createSupabaseServer } from "@/lib/supabase/server";
+import { chatLimiter, checkRateLimit } from "@/lib/rate-limit";
 
 export const maxDuration = 30;
 
@@ -11,6 +12,9 @@ export async function POST(req: Request) {
   if (!user) {
     return new Response("Unauthorized", { status: 401 });
   }
+
+  const rateLimitResponse = await checkRateLimit(chatLimiter, user.id);
+  if (rateLimitResponse) return rateLimitResponse;
 
   const { messages } = await req.json();
 
@@ -67,11 +71,25 @@ ${conversationSummary}
 ${contextText || "업로드된 문서가 없습니다."}
 --- 참고 문서 끝 ---`;
 
-  const result = streamText({
-    model: openai("gpt-4o"),
-    system: systemPrompt,
-    messages,
-  });
+  return createDataStreamResponse({
+    execute: (dataStream) => {
+      if (relevantDocs.length > 0) {
+        dataStream.writeMessageAnnotation({
+          sources: relevantDocs.map((doc, i) => ({
+            index: i + 1,
+            source: doc.source ?? "unknown",
+            content: doc.content.length > 150 ? doc.content.slice(0, 150) + "..." : doc.content,
+            similarity: Math.round(doc.similarity * 100) / 100,
+          })),
+        });
+      }
 
-  return result.toDataStreamResponse();
+      const result = streamText({
+        model: openai("gpt-4o"),
+        system: systemPrompt,
+        messages,
+      });
+      result.mergeIntoDataStream(dataStream);
+    },
+  });
 }

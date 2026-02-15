@@ -49,6 +49,24 @@
   margin-left: 1px;
 }
 
+/* ===== Source details/summary ===== */
+.source-summary {
+  list-style: none;
+}
+.source-summary::-webkit-details-marker {
+  display: none;
+}
+.source-summary::before {
+  content: "\25B6\FE0E";
+  display: inline-block;
+  margin-right: 0.4em;
+  font-size: 0.7em;
+  transition: transform 0.2s;
+}
+details[open] > .source-summary::before {
+  transform: rotate(90deg);
+}
+
 /* ===== Markdown body styles for assistant messages ===== */
 .markdown-body h1 {
   font-size: 1.5em;

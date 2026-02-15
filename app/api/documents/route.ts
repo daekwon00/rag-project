@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { createSupabaseServer } from "@/lib/supabase/server";
+import { documentLimiter, checkRateLimit } from "@/lib/rate-limit";
 
 export async function GET() {
   try {
@@ -33,6 +34,9 @@ export async function DELETE(req: Request) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const rateLimitResponse = await checkRateLimit(documentLimiter, user.id);
+    if (rateLimitResponse) return rateLimitResponse;
 
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");

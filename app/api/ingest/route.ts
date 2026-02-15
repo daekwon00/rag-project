@@ -3,6 +3,7 @@ import { chunkText } from "@/lib/chunker";
 import { generateEmbeddings } from "@/lib/ai/embedding";
 import { db } from "@/lib/db";
 import { createSupabaseServer } from "@/lib/supabase/server";
+import { ingestLimiter, checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   try {
@@ -11,6 +12,9 @@ export async function POST(req: Request) {
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const rateLimitResponse = await checkRateLimit(ingestLimiter, user.id);
+    if (rateLimitResponse) return rateLimitResponse;
 
     const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 

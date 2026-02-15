@@ -23,6 +23,24 @@ const mdComponents: Components = {
   ),
 };
 
+interface SourceItem {
+  index: number;
+  source: string;
+  content: string;
+  similarity: number;
+}
+
+function getSources(annotations?: unknown[]): SourceItem[] | null {
+  if (!annotations) return null;
+  for (const a of annotations) {
+    if (typeof a === "object" && a !== null && "sources" in a) {
+      const sources = (a as { sources: SourceItem[] }).sources;
+      if (Array.isArray(sources) && sources.length > 0) return sources;
+    }
+  }
+  return null;
+}
+
 type UploadStatus =
   | { type: "idle" }
   | { type: "uploading"; fileName: string }
@@ -251,14 +269,40 @@ export function Chat({ conversationId, initialMessages = [], onConversationCreat
                   {m.content}
                 </div>
               ) : (
-                <div className={`max-w-[80%] rounded-lg px-4 py-2 text-sm bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100 markdown-body${isStreaming ? " streaming" : ""}`}>
-                  <ReactMarkdown
-                    remarkPlugins={mdRemarkPlugins}
-                    rehypePlugins={mdRehypePlugins}
-                    components={mdComponents}
-                  >
-                    {m.content}
-                  </ReactMarkdown>
+                <div className="max-w-[80%]">
+                  <div className={`rounded-lg px-4 py-2 text-sm bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100 markdown-body${isStreaming ? " streaming" : ""}`}>
+                    <ReactMarkdown
+                      remarkPlugins={mdRemarkPlugins}
+                      rehypePlugins={mdRehypePlugins}
+                      components={mdComponents}
+                    >
+                      {m.content}
+                    </ReactMarkdown>
+                  </div>
+                  {(() => {
+                    const sources = getSources(m.annotations);
+                    if (!sources) return null;
+                    return (
+                      <details className="source-details mt-2 rounded-lg border border-gray-200 bg-gray-50 text-sm dark:border-gray-700 dark:bg-gray-900">
+                        <summary className="source-summary cursor-pointer select-none px-3 py-2 font-medium text-gray-700 dark:text-gray-300">
+                          참고 문서 ({sources.length}개)
+                        </summary>
+                        <div className="flex flex-col gap-2 px-3 pb-3 pt-1">
+                          {sources.map((src) => (
+                            <div key={src.index} className="rounded border border-gray-200 bg-white px-3 py-2 dark:border-gray-700 dark:bg-gray-800">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-medium text-gray-800 dark:text-gray-200 truncate">[출처 {src.index}] {src.source}</span>
+                                <span className="shrink-0 rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                                  {Math.round(src.similarity * 100)}%
+                                </span>
+                              </div>
+                              <p className="mt-1 text-xs leading-relaxed text-gray-600 dark:text-gray-400">{src.content}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </details>
+                    );
+                  })()}
                 </div>
               )}
             </div>
