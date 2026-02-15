@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "swagger": "npx swagger-ui-watcher docs/openapi.yaml --port 8080"
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.1.0",
