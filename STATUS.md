@@ -1,16 +1,16 @@
 # RAG Chat — Status
 
-> 마지막 업데이트: 2026-02-15 21:40 KST
+> 마지막 업데이트: 2026-02-15 21:50 KST
 
 ---
 
-## 현재 상태: 전 기능 정상 동작 ✅
+## 현재 상태: 전체 20개 작업 완료! ✅
 
 ### 인프라 설정 완료
 
 - [x] Supabase SQL 실행 — 테이블 4개 + RLS + 인덱스 완료
 - [x] Upstash Redis 생성 + 환경변수 설정 (Vercel + `.env.local`) ✅
-- [x] Vercel 프로덕션 배포 확인 (`69d3500`) ✅
+- [x] Vercel 프로덕션 배포 확인 (`bb1a632`) ✅
 
 ### 기능 검증 완료 (2026-02-15 21:10 KST)
 
@@ -91,14 +91,25 @@
   - 수정: `app/api/ingest/route.ts`, `components/chat.tsx`
 - **테스트: 74개 전체 통과** (chunker 23 + BM25 17 + reranker 8 + embedding 10 + chat 6 + ingest 10)
 
+### Phase 1-6, 1-7, 1-8, 3-5 (2026-02-15, 병렬 팀 작업 5차 — 최종)
+
+- [x] **1-6. 대화 내보내기** — 마크다운 다운로드 (채팅 UI 내보내기 버튼)
+  - 신규: `app/api/export/[id]/route.ts`
+  - 수정: `components/chat.tsx`
+- [x] **1-7. 모바일/PWA** — manifest.json, SVG 아이콘, viewport, apple-mobile-web-app
+  - 신규: `public/manifest.json`, `public/icon.svg`
+  - 수정: `app/layout.tsx`
+- [x] **1-8. 다국어(i18n)** — 한국어/영어 전환, localStorage 기반, KO/EN 토글 버튼
+  - 신규: `lib/i18n/translations.ts`, `lib/i18n/useTranslation.ts`
+  - 수정: `app/page.tsx`, `app/login/page.tsx`, `app/signup/page.tsx`, `app/documents/page.tsx`, `app/dashboard/page.tsx`, `components/sidebar.tsx`
+- [x] **3-5. Sentry 에러 모니터링** — @sentry/nextjs, graceful degradation, 글로벌 에러 바운더리
+  - 신규: `sentry.*.config.ts`, `app/global-error.tsx`
+  - 수정: `next.config.mjs`
+- **테스트: 74개 전체 통과**
+
 ---
 
-## 다음 작업
-
-- [ ] **3-5. 에러 모니터링** — Sentry
-- [ ] **1-6. 대화 내보내기** — PDF/MD 다운로드
-- [ ] **1-7. 모바일 최적화/PWA**
-- [ ] **1-8. 다국어 지원(i18n)**
+## 전체 완료! (20/20)
 
 ---
 
