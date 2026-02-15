@@ -25,9 +25,21 @@ export async function POST(req: Request) {
 
   const userQuery = lastMessage.content;
 
-  // 벡터 검색으로 관련 문서 조각 찾기
-  const relevantDocs = await findRelevantContent(userQuery);
-  console.log(`[RAG] query: "${userQuery}", found: ${relevantDocs.length} docs`);
+  // 최근 대화 맥락 추출 (마지막 메시지 제외, 최근 3쌍까지)
+  const recentContext: string[] = [];
+  const previousMessages = messages.slice(0, -1);
+  const recentPairs = previousMessages.slice(-6); // 최근 3쌍 (user+assistant)
+  for (const msg of recentPairs) {
+    if (msg.role === "user" && typeof msg.content === "string") {
+      recentContext.push(msg.content);
+    }
+  }
+
+  // 벡터 검색으로 관련 문서 조각 찾기 (대화 맥락 포함)
+  const relevantDocs = await findRelevantContent(userQuery, {
+    context: recentContext.length > 0 ? recentContext : undefined,
+  });
+  console.log(`[RAG] query: "${userQuery}", context: ${recentContext.length} msgs, found: ${relevantDocs.length} docs`);
   relevantDocs.forEach((doc, i) =>
     console.log(`  [${i}] similarity: ${doc.similarity.toFixed(4)}, source: ${doc.source}, content: ${doc.content.slice(0, 80)}...`)
   );
@@ -39,12 +51,18 @@ export async function POST(req: Request) {
     )
     .join("\n\n---\n\n");
 
+  // 대화 히스토리 요약 (시스템 프롬프트에 포함)
+  const conversationSummary = recentContext.length > 0
+    ? `\n--- 이전 대화 맥락 ---\n사용자의 이전 질문들: ${recentContext.join(" → ")}\n--- 이전 대화 맥락 끝 ---\n`
+    : "";
+
   const systemPrompt = `당신은 업로드된 문서를 기반으로 질문에 답변하는 AI 어시스턴트입니다.
 아래 문서 조각들을 참고하여 질문에 답변하세요.
 답변 시 관련 출처를 [출처 N] 형태로 표시하세요.
 문서 조각이 제공되었다면 그 내용을 기반으로 최대한 답변하세요.
 문서 조각이 하나도 없는 경우에만 "관련 문서에서 해당 정보를 찾을 수 없습니다."라고 답하세요.
-
+이전 대화 맥락이 있다면 참고하여 일관성 있는 답변을 하세요.
+${conversationSummary}
 --- 참고 문서 ---
 ${contextText || "업로드된 문서가 없습니다."}
 --- 참고 문서 끝 ---`;

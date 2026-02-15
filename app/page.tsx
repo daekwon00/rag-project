@@ -3,6 +3,7 @@
 import { Chat } from "@/components/chat";
 import { Sidebar } from "@/components/sidebar";
 import { createSupabaseBrowser } from "@/lib/supabase/client";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import type { Message as DBMessage } from "@/lib/db/schema";
@@ -120,6 +121,12 @@ export default function Home() {
               <span className="rounded bg-gray-100 px-2 py-1 dark:bg-gray-700 dark:text-gray-300">GPT-4o</span>
               <span className="rounded bg-gray-100 px-2 py-1 dark:bg-gray-700 dark:text-gray-300">pgvector</span>
             </div>
+            <Link
+              href="/documents"
+              className="rounded-md px-3 py-1.5 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
+            >
+              문서 관리
+            </Link>
             {userEmail && (
               <span className="hidden text-xs text-gray-400 dark:text-gray-500 sm:block">{userEmail}</span>
             )}

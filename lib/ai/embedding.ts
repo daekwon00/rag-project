@@ -35,8 +35,23 @@ export async function generateEmbeddings(
 
 export async function findRelevantContent(
   query: string,
-  limit: number = 5
+  options?: number | { context?: string[]; limit?: number }
 ): Promise<{ content: string; source: string | null; similarity: number }[]> {
-  const queryEmbedding = await generateEmbedding(query);
+  // 하위호환: 두 번째 인자가 number이면 limit으로 처리
+  const limit =
+    typeof options === "number"
+      ? options
+      : options?.limit ?? 5;
+  const context =
+    typeof options === "object" && options?.context
+      ? options.context
+      : undefined;
+
+  // 대화 맥락이 있으면 결합 쿼리 생성
+  const augmentedQuery = context?.length
+    ? `이전 맥락: ${context.join(" | ")} | 현재 질문: ${query}`
+    : query;
+
+  const queryEmbedding = await generateEmbedding(augmentedQuery);
   return db.searchEmbeddings(queryEmbedding, limit);
 }

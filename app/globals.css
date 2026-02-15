@@ -37,6 +37,18 @@
 .dot-2 { animation: dot-bounce 1.2s infinite 200ms; }
 .dot-3 { animation: dot-bounce 1.2s infinite 400ms; }
 
+/* 스트리밍 커서 깜빡임 */
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.markdown-body.streaming > :last-child::after {
+  content: "▋";
+  animation: cursor-blink 0.8s step-end infinite;
+  margin-left: 1px;
+}
+
 /* ===== Markdown body styles for assistant messages ===== */
 .markdown-body h1 {
   font-size: 1.5em;

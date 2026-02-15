@@ -66,6 +66,7 @@ export function Chat({ conversationId, initialMessages = [], onConversationCreat
     isLoading,
     error,
     reload,
+    stop,
   } = useChat({
     initialMessages,
     onFinish: async (message) => {
@@ -172,6 +173,11 @@ export function Chat({ conversationId, initialMessages = [], onConversationCreat
     }
   }
 
+  // 스트리밍 상태 감지
+  const lastMessage = messages[messages.length - 1];
+  const isWaitingForResponse = isLoading && (!lastMessage || lastMessage.role === "user" || (lastMessage.role === "assistant" && !lastMessage.content));
+  const streamingMessageId = isLoading && lastMessage?.role === "assistant" && lastMessage.content ? lastMessage.id : null;
+
   return (
     <div className="flex h-full flex-col gap-4">
       {/* 문서 업로드 */}
@@ -231,37 +237,44 @@ export function Chat({ conversationId, initialMessages = [], onConversationCreat
             문서를 업로드한 후 질문을 입력하세요.
           </p>
         )}
-        {messages.map((m) => (
-          <div
-            key={m.id}
-            className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
-          >
-            {m.role === "user" ? (
-              <div className="max-w-[80%] rounded-lg px-4 py-2 text-sm whitespace-pre-wrap bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900">
-                {m.content}
-              </div>
-            ) : (
-              <div className="max-w-[80%] rounded-lg px-4 py-2 text-sm bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100 markdown-body">
-                <ReactMarkdown
-                  remarkPlugins={mdRemarkPlugins}
-                  rehypePlugins={mdRehypePlugins}
-                  components={mdComponents}
-                >
+        {messages.map((m, i) => {
+          // 스트리밍 대기 중 빈 어시스턴트 메시지 숨김
+          if (isWaitingForResponse && i === messages.length - 1 && m.role === "assistant" && !m.content) return null;
+          const isStreaming = m.id === streamingMessageId;
+          return (
+            <div
+              key={m.id}
+              className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              {m.role === "user" ? (
+                <div className="max-w-[80%] rounded-lg px-4 py-2 text-sm whitespace-pre-wrap bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900">
                   {m.content}
-                </ReactMarkdown>
-              </div>
-            )}
-          </div>
-        ))}
-        {isLoading && (
+                </div>
+              ) : (
+                <div className={`max-w-[80%] rounded-lg px-4 py-2 text-sm bg-gray-100 text-gray-900 dark:bg-gray-800 dark:text-gray-100 markdown-body${isStreaming ? " streaming" : ""}`}>
+                  <ReactMarkdown
+                    remarkPlugins={mdRemarkPlugins}
+                    rehypePlugins={mdRehypePlugins}
+                    components={mdComponents}
+                  >
+                    {m.content}
+                  </ReactMarkdown>
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {isWaitingForResponse && (
           <div className="flex justify-start">
-            <div className="flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-sm text-gray-400 dark:bg-gray-700 dark:text-gray-400">
-              <span className="inline-flex gap-1 text-lg font-bold">
-                <span className="dot-1">.</span>
-                <span className="dot-2">.</span>
-                <span className="dot-3">.</span>
-              </span>
-              답변 생성 중
+            <div className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-gray-800">
+              <div className="flex items-center gap-3">
+                <span className="inline-flex gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-gray-400 dark:bg-gray-500 dot-1" />
+                  <span className="h-2 w-2 rounded-full bg-gray-400 dark:bg-gray-500 dot-2" />
+                  <span className="h-2 w-2 rounded-full bg-gray-400 dark:bg-gray-500 dot-3" />
+                </span>
+                <span className="text-sm text-gray-400 dark:text-gray-500">답변을 생성하고 있습니다...</span>
+              </div>
             </div>
           </div>
         )}
@@ -289,13 +302,25 @@ export function Chat({ conversationId, initialMessages = [], onConversationCreat
           placeholder="질문을 입력하세요..."
           className="flex-1 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:ring-gray-500"
         />
-        <button
-          type="submit"
-          disabled={isLoading || !input.trim()}
-          className="rounded-lg bg-gray-900 px-6 py-3 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300 dark:focus:ring-gray-500"
-        >
-          전송
-        </button>
+        {isLoading ? (
+          <button
+            type="button"
+            onClick={stop}
+            className="rounded-lg bg-red-600 px-4 py-3 text-sm font-medium text-white hover:bg-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-red-500 dark:hover:bg-red-400"
+          >
+            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="6" width="12" height="12" rx="2" />
+            </svg>
+          </button>
+        ) : (
+          <button
+            type="submit"
+            disabled={!input.trim()}
+            className="rounded-lg bg-gray-900 px-6 py-3 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300 dark:focus:ring-gray-500"
+          >
+            전송
+          </button>
+        )}
       </form>
     </div>
   );

@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import type { MatchResult } from "./schema";
+import type { MatchResult, Resource } from "./schema";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -44,5 +44,27 @@ export const db = {
     });
     if (error) throw error;
     return data ?? [];
+  },
+
+  async listResources(): Promise<Pick<Resource, 'id' | 'name' | 'chunk_count' | 'created_at'>[]> {
+    const { data, error } = await supabase
+      .from("resources")
+      .select("id, name, chunk_count, created_at")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+    return data ?? [];
+  },
+
+  async deleteResource(id: number) {
+    const { error } = await supabase.from("resources").delete().eq("id", id);
+    if (error) throw error;
+  },
+
+  async deleteEmbeddingsBySource(source: string) {
+    const { error } = await supabase
+      .from("embeddings")
+      .delete()
+      .eq("source", source);
+    if (error) throw error;
   },
 };
