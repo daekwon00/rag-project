@@ -32,15 +32,48 @@ export async function POST(req: Request) {
 
     let content: string;
 
+    const SUPPORTED_EXTENSIONS = [".pdf", ".docx", ".pptx", ".txt", ".md"];
+
     if (file) {
+      const fileName = file.name.toLowerCase();
+      const hasValidExtension = SUPPORTED_EXTENSIONS.some((ext) =>
+        fileName.endsWith(ext)
+      );
+
+      if (!hasValidExtension) {
+        return NextResponse.json(
+          { error: "지원하는 파일 형식: PDF, DOCX, PPTX, TXT, MD" },
+          { status: 400 }
+        );
+      }
+
       // PDF 파일 처리
       if (file.type === "application/pdf" || file.name.endsWith(".pdf")) {
         const pdfParse = (await import("pdf-parse")).default;
         const buffer = Buffer.from(await file.arrayBuffer());
         const pdfData = await pdfParse(buffer);
         content = pdfData.text;
+      } else if (
+        file.name.endsWith(".docx") ||
+        file.type ===
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      ) {
+        // DOCX 파일 처리
+        const mammoth = (await import("mammoth")).default;
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const result = await mammoth.extractRawText({ buffer });
+        content = result.value;
+      } else if (
+        file.name.endsWith(".pptx") ||
+        file.type ===
+          "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+      ) {
+        // PPTX 파일 처리
+        const { parseOffice } = await import("officeparser");
+        const buffer = Buffer.from(await file.arrayBuffer());
+        content = await parseOffice(buffer);
       } else {
-        // 텍스트 파일
+        // 텍스트 파일 (TXT, MD)
         content = await file.text();
       }
     } else if (text) {

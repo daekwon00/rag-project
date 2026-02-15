@@ -2,6 +2,7 @@ import { openai } from "@ai-sdk/openai";
 import { embed, embedMany } from "ai";
 import { db } from "@/lib/db";
 import { computeBM25Scores } from "@/lib/search/bm25";
+import { rerankWithLLM } from "@/lib/search/reranker";
 
 const embeddingModel = openai.embedding("text-embedding-3-small");
 
@@ -130,5 +131,12 @@ export async function findRelevantContent(
 
   rrfScored.sort((a, b) => b.rrfScore - a.rrfScore);
 
-  return rrfScored.slice(0, limit).map(({ rrfScore, ...doc }) => doc);
+  const candidates = rrfScored.slice(0, limit).map(({ rrfScore, ...doc }) => doc);
+
+  // Re-ranking: 결과가 3개 이상이면 LLM 기반 재정렬 적용
+  if (candidates.length >= 3) {
+    return rerankWithLLM(query, candidates, { topK: limit });
+  }
+
+  return candidates;
 }

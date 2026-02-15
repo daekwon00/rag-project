@@ -68,6 +68,22 @@ export const db = {
     if (error) throw error;
   },
 
+  async getResourceCount(): Promise<number> {
+    const { count, error } = await supabase
+      .from("resources")
+      .select("*", { count: "exact", head: true });
+    if (error) throw error;
+    return count ?? 0;
+  },
+
+  async getEmbeddingCount(): Promise<number> {
+    const { count, error } = await supabase
+      .from("embeddings")
+      .select("*", { count: "exact", head: true });
+    if (error) throw error;
+    return count ?? 0;
+  },
+
   async searchByText(
     query: string,
     limit: number = 20

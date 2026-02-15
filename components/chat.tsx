@@ -206,7 +206,7 @@ export function Chat({ conversationId, initialMessages = [], onConversationCreat
         <input
           ref={fileInputRef}
           type="file"
-          accept=".pdf,.txt,.md"
+          accept=".pdf,.txt,.md,.docx,.pptx"
           className="flex-1 text-sm text-gray-900 dark:text-gray-100"
         />
         <button

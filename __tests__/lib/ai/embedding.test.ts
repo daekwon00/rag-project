@@ -20,8 +20,13 @@ vi.mock("@/lib/db", () => ({
   },
 }));
 
+vi.mock("@/lib/search/reranker", () => ({
+  rerankWithLLM: vi.fn(),
+}));
+
 import { embed } from "ai";
 import { db } from "@/lib/db";
+import { rerankWithLLM } from "@/lib/search/reranker";
 import {
   generateEmbedding,
   findRelevantContent,
@@ -30,6 +35,7 @@ import {
 const mockEmbed = vi.mocked(embed);
 const mockSearchEmbeddings = vi.mocked(db.searchEmbeddings);
 const mockSearchByText = vi.mocked(db.searchByText);
+const mockRerank = vi.mocked(rerankWithLLM);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -115,6 +121,44 @@ describe("findRelevantContent", () => {
 
   it("검색 결과를 반환한다", async () => {
     const result = await findRelevantContent("검색어");
+    expect(result).toEqual(fakeResults);
+  });
+
+  it("하이브리드 검색 결과가 3개 이상이면 re-ranking을 적용한다", async () => {
+    const threeResults = [
+      { id: 1, content: "문서1", source: "f1.pdf", similarity: 0.9 },
+      { id: 2, content: "문서2", source: "f2.pdf", similarity: 0.85 },
+      { id: 3, content: "문서3", source: "f3.pdf", similarity: 0.8 },
+    ];
+    mockSearchEmbeddings.mockResolvedValue(threeResults);
+    mockSearchByText.mockResolvedValue([
+      { id: 1, content: "문서1", source: "f1.pdf" },
+      { id: 2, content: "문서2", source: "f2.pdf" },
+      { id: 3, content: "문서3", source: "f3.pdf" },
+    ]);
+
+    const reranked = [
+      { content: "문서3", source: "f3.pdf", similarity: 0.8 },
+      { content: "문서1", source: "f1.pdf", similarity: 0.9 },
+      { content: "문서2", source: "f2.pdf", similarity: 0.85 },
+    ];
+    mockRerank.mockResolvedValue(reranked);
+
+    const result = await findRelevantContent("검색어");
+
+    expect(mockRerank).toHaveBeenCalledTimes(1);
+    expect(mockRerank).toHaveBeenCalledWith(
+      "검색어",
+      expect.any(Array),
+      { topK: 5 }
+    );
+    expect(result).toEqual(reranked);
+  });
+
+  it("하이브리드 검색 결과가 2개 이하면 re-ranking을 건너뛴다", async () => {
+    // Default: searchByText returns empty, vector returns 2 docs → vector-only path
+    const result = await findRelevantContent("검색어");
+    expect(mockRerank).not.toHaveBeenCalled();
     expect(result).toEqual(fakeResults);
   });
 });
