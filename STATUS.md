@@ -1,6 +1,6 @@
 # RAG Chat — Status
 
-> 마지막 업데이트: 2026-02-15 21:30 KST
+> 마지막 업데이트: 2026-02-15 21:40 KST
 
 ---
 
@@ -10,7 +10,7 @@
 
 - [x] Supabase SQL 실행 — 테이블 4개 + RLS + 인덱스 완료
 - [x] Upstash Redis 생성 + 환경변수 설정 (Vercel + `.env.local`) ✅
-- [x] Vercel 프로덕션 배포 확인 (`154e05b`) ✅
+- [x] Vercel 프로덕션 배포 확인 (`69d3500`) ✅
 
 ### 기능 검증 완료 (2026-02-15 21:10 KST)
 
@@ -78,17 +78,24 @@
 - [x] tsconfig.json `target: es2017` 설정 (유니코드 정규식, Set 이터레이션 지원)
 - **테스트: 54개 전체 통과** (chunker 23 + BM25 17 + embedding 8 + chat 6)
 
+### Phase 1-5, 2-6, 2-7 (2026-02-15, 병렬 팀 작업 4차)
+
+- [x] **1-5. 대시보드 페이지** — `/dashboard` 통계 카드 4개 + 7일 활동 바 차트, 다크 모드
+  - 신규: `app/dashboard/page.tsx`, `app/api/stats/route.ts`
+  - 수정: `lib/db/index.ts`, `components/sidebar.tsx`
+- [x] **2-6. Re-ranking** — GPT-4o-mini LLM 기반 관련성 점수 재정렬 (graceful degradation)
+  - 신규: `lib/search/reranker.ts`, `__tests__/lib/search/reranker.test.ts` (8개 테스트)
+  - 수정: `lib/ai/embedding.ts`, `__tests__/lib/ai/embedding.test.ts` (10개 테스트)
+- [x] **2-7. 멀티모달 문서** — DOCX(mammoth) + PPTX(officeparser) 파일 업로드 지원
+  - 신규: `__tests__/api/ingest.test.ts` (10개 테스트), `lib/mammoth.d.ts`, `lib/officeparser.d.ts`
+  - 수정: `app/api/ingest/route.ts`, `components/chat.tsx`
+- **테스트: 74개 전체 통과** (chunker 23 + BM25 17 + reranker 8 + embedding 10 + chat 6 + ingest 10)
+
 ---
 
 ## 다음 작업
 
-- [ ] **2-6. Re-ranking** — Cross-encoder 재정렬
-- [ ] **2-7. 멀티모달 문서** — DOCX, PPTX, OCR
 - [ ] **3-5. 에러 모니터링** — Sentry
-
-### Phase 1 나머지
-
-- [ ] **1-5. 대시보드 페이지** — 사용 통계 시각화
 - [ ] **1-6. 대화 내보내기** — PDF/MD 다운로드
 - [ ] **1-7. 모바일 최적화/PWA**
 - [ ] **1-8. 다국어 지원(i18n)**
