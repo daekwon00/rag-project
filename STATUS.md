@@ -1,10 +1,10 @@
 # RAG Chat — Status
 
-> 마지막 업데이트: 2026-02-15 21:50 KST
+> 마지막 업데이트: 2026-02-15 22:35 KST
 
 ---
 
-## 현재 상태: 전체 20개 작업 완료! ✅
+## 현재 상태: 전체 20개 작업 + 문서화 4개 완료! ✅
 
 ### 인프라 설정 완료
 
@@ -107,9 +107,17 @@
   - 수정: `next.config.mjs`
 - **테스트: 74개 전체 통과**
 
+### 문서화 (2026-02-15, 병렬 팀 작업 6차)
+
+- [x] **API 문서** — `docs/API.md` (한국어 REST API 레퍼런스) + `docs/openapi.yaml` (OpenAPI 3.0 스펙)
+- [x] **컴포넌트 스토리북** — Storybook 8 + Chat/Sidebar 스토리 (다크 모드 지원)
+  - 신규: `.storybook/main.ts`, `.storybook/preview.tsx`, `stories/Chat.stories.tsx`, `stories/Sidebar.stories.tsx`
+- [x] **배포 가이드** — `docs/DEPLOYMENT.md` (Self-hosting, Supabase 설정, 트러블슈팅)
+- [x] **기여 가이드** — `CONTRIBUTING.md` (코드 스타일, PR 프로세스, 테스트 가이드)
+
 ---
 
-## 전체 완료! (20/20)
+## 전체 완료! (20/20 + 문서화 4개)
 
 ---
 
