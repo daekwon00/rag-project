@@ -87,4 +87,4 @@ UPSTASH_REDIS_REST_TOKEN=
 - 임베딩에 출처명 포함하여 파일명 기반 검색 지원
 - conversations/messages 테이블은 Supabase SQL Editor에서 직접 생성 필요 (schema.ts 주석 참조)
 - Supabase Auth → Providers → Email 활성화 필요
-- 옵시디안 문서: `~/Documents/ObsidianVaults/DkVault/1_Projects/DK-Dev/Claude/rag-project/`
+- 옵시디안 문서: `~/Documents/ObsidianVaults/DkVault/1-projects/02_DkDev/08_RagProject/`
