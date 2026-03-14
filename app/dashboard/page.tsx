@@ -83,7 +83,7 @@ export default function DashboardPage() {
       {/* 본문 */}
       <main className="mx-auto max-w-4xl px-4 py-6">
         {loading ? (
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 4 }).map((_, i) => (
               <Card key={i}>
                 <CardContent className="p-5">
@@ -101,7 +101,7 @@ export default function DashboardPage() {
         ) : stats ? (
           <div className="space-y-6">
             {/* 통계 카드 */}
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {STAT_KEYS.map((key, idx) => (
                 <Card key={key}>
                   <CardContent className="p-5">

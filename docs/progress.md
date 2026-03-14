@@ -35,11 +35,11 @@
 - [x] Step 01: shadcn/ui 설치 및 Chat 모듈 분리
 - [x] Step 02: Dashboard/Main Page/Sidebar semantic 테마 전환
 
-## Phase 4: UI/UX 완성
+## Phase 4: UI/UX 완성 (완료)
 - [x] Step 01: Login/Signup 페이지 semantic 마이그레이션
 - [x] Step 02: Documents 페이지 리팩토링
 - [x] Step 03: markdown-body CSS variable 전환
-- [ ] Step 04: 반응형 모바일 UI 점검 및 개선
+- [x] Step 04: 반응형 모바일 UI 점검 및 개선
 
 ## Phase 5: 사용자 경험 강화
 - [ ] Step 01: 파일 드래그 앤 드롭 업로드

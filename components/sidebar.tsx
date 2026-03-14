@@ -76,7 +76,7 @@ export function Sidebar({ currentId, onSelect, onNew, isOpen, onClose }: Sidebar
           <h2 className="text-sm font-semibold text-foreground">{t("sidebar", "conversations")}</h2>
           <button
             onClick={onClose}
-            className="text-muted-foreground hover:text-foreground lg:hidden"
+            className="flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground lg:hidden"
           >
             <X className="h-5 w-5" />
           </button>
@@ -89,7 +89,7 @@ export function Sidebar({ currentId, onSelect, onNew, isOpen, onClose }: Sidebar
               onNew();
               onClose();
             }}
-            className="flex w-full items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-sm text-muted-foreground hover:border-primary hover:text-foreground"
+            className="flex w-full items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2.5 text-sm text-muted-foreground hover:border-primary hover:text-foreground"
           >
             <Plus className="h-4 w-4" />
             {t("sidebar", "newChat")}
@@ -120,7 +120,7 @@ export function Sidebar({ currentId, onSelect, onNew, isOpen, onClose }: Sidebar
                     <span className="truncate">{conv.title}</span>
                     <button
                       onClick={(e) => handleDelete(e, conv.id)}
-                      className="ml-2 hidden shrink-0 text-muted-foreground hover:text-destructive group-hover:block"
+                      className="ml-2 shrink-0 rounded p-1 text-muted-foreground opacity-0 hover:text-destructive group-hover:opacity-100 lg:opacity-0 max-lg:opacity-60"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
