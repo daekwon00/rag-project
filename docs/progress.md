@@ -37,7 +37,7 @@
 
 ## Phase 4: UI/UX 완성
 - [x] Step 01: Login/Signup 페이지 semantic 마이그레이션
-- [ ] Step 02: Documents 페이지 리팩토링
+- [x] Step 02: Documents 페이지 리팩토링
 - [ ] Step 03: markdown-body CSS variable 전환
 - [ ] Step 04: 반응형 모바일 UI 점검 및 개선
 

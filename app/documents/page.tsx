@@ -3,6 +3,22 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useTranslation } from "@/lib/i18n/useTranslation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { ArrowLeft, FileText, Trash2, Upload } from "lucide-react";
 
 interface Resource {
   id: number;
@@ -40,11 +56,6 @@ export default function DocumentsPage() {
   }, []);
 
   async function handleDelete(resource: Resource) {
-    const msg = t("documents", "deleteConfirm").replace("{name}", resource.name);
-    if (!window.confirm(msg)) {
-      return;
-    }
-
     setDeletingId(resource.id);
     try {
       const res = await fetch(
@@ -74,73 +85,75 @@ export default function DocumentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-background">
       {/* 헤더 */}
-      <header className="border-b border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800">
+      <header className="border-b border-border bg-card px-4 py-3">
         <div className="mx-auto flex max-w-4xl items-center justify-between">
           <div>
-            <h1 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+            <h1 className="text-lg font-bold text-foreground">
               {t("documents", "title")}
             </h1>
-            <p className="text-xs text-gray-400 dark:text-gray-500">
+            <p className="text-xs text-muted-foreground">
               {t("documents", "subtitle")}
             </p>
           </div>
-          <Link
-            href="/"
-            className="rounded-md px-3 py-1.5 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
-          >
-            {t("common", "backToChat")}
-          </Link>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/">
+              <ArrowLeft className="mr-1 h-4 w-4" />
+              {t("common", "backToChat")}
+            </Link>
+          </Button>
         </div>
       </header>
 
       {/* 본문 */}
       <main className="mx-auto max-w-4xl px-4 py-6">
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600 dark:border-gray-600 dark:border-t-gray-300" />
-            <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
-              {t("documents", "loadingList")}
-            </span>
+          <div className="space-y-3">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
           </div>
         ) : error ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600 dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
+          <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
             {error}
           </div>
         ) : resources.length === 0 ? (
-          <div className="rounded-lg border border-gray-200 bg-white p-8 text-center dark:border-gray-700 dark:bg-gray-800">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {t("documents", "noDocuments")}
-            </p>
-            <Link
-              href="/"
-              className="mt-2 inline-block text-sm text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300"
-            >
-              {t("documents", "uploadPrompt")}
-            </Link>
-          </div>
+          <Card>
+            <CardContent className="flex flex-col items-center py-8">
+              <FileText className="mb-3 h-10 w-10 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">
+                {t("documents", "noDocuments")}
+              </p>
+              <Button variant="link" asChild className="mt-2">
+                <Link href="/">
+                  <Upload className="mr-1 h-4 w-4" />
+                  {t("documents", "uploadPrompt")}
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
         ) : (
           <>
-            <div className="mb-3 text-sm text-gray-500 dark:text-gray-400">
+            <div className="mb-3 text-sm text-muted-foreground">
               {t("documents", "totalDocuments").replace("{count}", String(resources.length))}
             </div>
 
             {/* 데스크탑 테이블 */}
-            <div className="hidden overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 sm:block">
+            <Card className="hidden sm:block">
               <table className="w-full text-left text-sm">
                 <thead>
-                  <tr className="border-b border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50">
-                    <th className="px-4 py-3 font-medium text-gray-500 dark:text-gray-400">
+                  <tr className="border-b border-border bg-muted/50">
+                    <th className="px-4 py-3 font-medium text-muted-foreground">
                       {t("documents", "fileName")}
                     </th>
-                    <th className="px-4 py-3 font-medium text-gray-500 dark:text-gray-400">
+                    <th className="px-4 py-3 font-medium text-muted-foreground">
                       {t("documents", "chunkCount")}
                     </th>
-                    <th className="px-4 py-3 font-medium text-gray-500 dark:text-gray-400">
+                    <th className="px-4 py-3 font-medium text-muted-foreground">
                       {t("documents", "uploadDate")}
                     </th>
-                    <th className="px-4 py-3 font-medium text-gray-500 dark:text-gray-400">
+                    <th className="px-4 py-3 font-medium text-muted-foreground">
                       {t("documents", "actions")}
                     </th>
                   </tr>
@@ -149,57 +162,106 @@ export default function DocumentsPage() {
                   {resources.map((r) => (
                     <tr
                       key={r.id}
-                      className="border-b border-gray-100 last:border-0 dark:border-gray-700/50"
+                      className="border-b border-border/50 last:border-0"
                     >
-                      <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
-                        {r.name}
+                      <td className="px-4 py-3 font-medium text-foreground">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          {r.name}
+                        </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
-                        {r.chunk_count}
+                      <td className="px-4 py-3">
+                        <Badge variant="secondary">{r.chunk_count}</Badge>
                       </td>
-                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
+                      <td className="px-4 py-3 text-muted-foreground">
                         {formatDate(r.created_at)}
                       </td>
                       <td className="px-4 py-3">
-                        <button
-                          onClick={() => handleDelete(r)}
-                          disabled={deletingId === r.id}
-                          className="rounded px-2.5 py-1 text-xs text-red-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300"
-                        >
-                          {deletingId === r.id ? t("common", "deleting") : t("common", "delete")}
-                        </button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={deletingId === r.id}
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="mr-1 h-3.5 w-3.5" />
+                              {deletingId === r.id ? t("common", "deleting") : t("common", "delete")}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>{t("common", "delete")}</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {t("documents", "deleteConfirm").replace("{name}", r.name)}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>{"취소"}</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDelete(r)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                {t("common", "delete")}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-            </div>
+            </Card>
 
             {/* 모바일 카드 */}
             <div className="flex flex-col gap-3 sm:hidden">
               {resources.map((r) => (
-                <div
-                  key={r.id}
-                  className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800"
-                >
-                  <div className="flex items-start justify-between">
+                <Card key={r.id}>
+                  <CardContent className="flex items-start justify-between p-4">
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-gray-900 dark:text-gray-100">
-                        {r.name}
-                      </p>
-                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        {t("documents", "chunks").replace("{count}", String(r.chunk_count))} · {formatDate(r.created_at)}
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                        <p className="truncate font-medium text-foreground">
+                          {r.name}
+                        </p>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        <Badge variant="secondary" className="mr-1">{r.chunk_count}</Badge>
+                        {formatDate(r.created_at)}
                       </p>
                     </div>
-                    <button
-                      onClick={() => handleDelete(r)}
-                      disabled={deletingId === r.id}
-                      className="ml-3 rounded px-2.5 py-1 text-xs text-red-500 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/20 dark:hover:text-red-300"
-                    >
-                      {deletingId === r.id ? t("common", "deleting") : t("common", "delete")}
-                    </button>
-                  </div>
-                </div>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          disabled={deletingId === r.id}
+                          className="ml-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>{t("common", "delete")}</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            {t("documents", "deleteConfirm").replace("{name}", r.name)}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>{"취소"}</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDelete(r)}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            {t("common", "delete")}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           </>
