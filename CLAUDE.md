@@ -87,4 +87,10 @@ UPSTASH_REDIS_REST_TOKEN=
 - 임베딩에 출처명 포함하여 파일명 기반 검색 지원
 - conversations/messages 테이블은 Supabase SQL Editor에서 직접 생성 필요 (schema.ts 주석 참조)
 - Supabase Auth → Providers → Email 활성화 필요
-- 옵시디안 문서: `~/Documents/ObsidianVaults/DkVault/1-projects/02_DkDev/08_RagProject/`
+- 옵시디안 문서: `~/Documents/ObsidianVaults/DkVault/1-projects/02_DkDev/RagProject/`
+
+## SDD (Spec-Driven Development)
+- 프로젝트 요구사항: prd.md 참고
+- 작업 진행: docs/ 하위의 phase/step 문서를 따를 것
+- 각 step 완료 시: docs/progress.md 체크리스트 업데이트
+- 현재 진행 상황 확인: /sdd status

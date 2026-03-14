@@ -4,6 +4,10 @@ import { createSupabaseBrowser } from "@/lib/supabase/client";
 import { useTranslation } from "@/lib/i18n/useTranslation";
 import Link from "next/link";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -36,84 +40,82 @@ export default function SignupPage() {
 
   if (success) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-900">
-        <div className="w-full max-w-sm text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t("auth", "checkEmail")}</h1>
-          <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
-            <span className="font-medium text-gray-900 dark:text-gray-100">{email}</span>{t("auth", "confirmSent")}
-            {" "}{t("auth", "confirmInstruction")}
-          </p>
-          <Link
-            href="/login"
-            className="mt-6 inline-block text-sm font-medium text-gray-900 hover:underline dark:text-gray-100"
-          >
-            {t("auth", "backToLogin")}
-          </Link>
-        </div>
+      <main className="flex min-h-screen items-center justify-center bg-background px-4">
+        <Card className="w-full max-w-sm">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">{t("auth", "checkEmail")}</CardTitle>
+            <CardDescription>
+              <span className="font-medium text-foreground">{email}</span>{t("auth", "confirmSent")}
+              {" "}{t("auth", "confirmInstruction")}
+            </CardDescription>
+          </CardHeader>
+          <CardFooter className="justify-center">
+            <Link
+              href="/login"
+              className="text-sm font-medium text-foreground hover:underline"
+            >
+              {t("auth", "backToLogin")}
+            </Link>
+          </CardFooter>
+        </Card>
       </main>
     );
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-900">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t("auth", "loginTitle")}</h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{t("auth", "signupSubtitle")}</p>
-        </div>
+    <main className="flex min-h-screen items-center justify-center bg-background px-4">
+      <Card className="w-full max-w-sm">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl">{t("auth", "loginTitle")}</CardTitle>
+          <CardDescription>{t("auth", "signupSubtitle")}</CardDescription>
+        </CardHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              {t("auth", "email")}
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="mt-1 block w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:ring-gray-500"
-              placeholder="email@example.com"
-            />
-          </div>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">{t("auth", "email")}</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="email@example.com"
+              />
+            </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              {t("auth", "password")}
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              className="mt-1 block w-full rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400 dark:focus:ring-gray-500"
-              placeholder={t("auth", "passwordMinLength")}
-            />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">{t("auth", "password")}</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                placeholder={t("auth", "passwordMinLength")}
+              />
+            </div>
 
-          {error && (
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
-          )}
+            {error && (
+              <p className="text-sm text-destructive">{error}</p>
+            )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-gray-900 py-3 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300 dark:focus:ring-gray-500"
-          >
-            {loading ? t("auth", "signingUp") : t("common", "signup")}
-          </button>
-        </form>
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? t("auth", "signingUp") : t("common", "signup")}
+            </Button>
+          </form>
+        </CardContent>
 
-        <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
-          {t("auth", "hasAccount")}{" "}
-          <Link href="/login" className="font-medium text-gray-900 hover:underline dark:text-gray-100">
-            {t("common", "login")}
-          </Link>
-        </p>
-      </div>
+        <CardFooter className="justify-center">
+          <p className="text-sm text-muted-foreground">
+            {t("auth", "hasAccount")}{" "}
+            <Link href="/login" className="font-medium text-foreground hover:underline">
+              {t("common", "login")}
+            </Link>
+          </p>
+        </CardFooter>
+      </Card>
     </main>
   );
 }
